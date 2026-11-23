@@ -3,92 +3,143 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HUÉSPED · Clasificación</title>
-<meta name="description" content="Quién se ha comido la demo de HUÉSPED y quién no suelta el mando. Se actualiza solo.">
+<meta name="color-scheme" content="dark">
+<title>huésped · clasificación</title>
+<meta name="description" content="Quién terminó la demo de HUÉSPED y quién más ha jugado.">
 <style>
   :root {
-    --bg: #0b0709; --panel: #150d11; --ink: #050204; --bone: #ecdcc0; --dim: #a8967c;
-    --amber: #ffc257; --blood: #c70f1a; --sick: #9a1a5c; --line: #2b1a21;
+    --bg: #0d0c0e;
+    --text: rgba(255, 255, 255, 0.88);
+    --dim: rgba(255, 255, 255, 0.46);
+    --faint: rgba(255, 255, 255, 0.22);
+    --glass: rgba(255, 255, 255, 0.045);
+    --edge: rgba(255, 255, 255, 0.09);
+    --rule: rgba(255, 255, 255, 0.06);
   }
-  @media (prefers-color-scheme: light) { :root { --bg: #0b0709; } }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--bone); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
-  body { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, #2a0d1d 0%, var(--bg) 60%); }
-  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
-  h1 { margin: 0; font-size: clamp(34px, 8vw, 64px); letter-spacing: 0.06em; color: var(--amber); text-shadow: 3px 3px 0 var(--blood); transform: rotate(-1.2deg); }
-  .sub { margin: 10px 0 26px; color: var(--dim); font-size: 15px; }
-  .tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-  .tab { appearance: none; border: 2px solid var(--ink); background: var(--panel); color: var(--bone); padding: 10px 16px; font: inherit; font-size: 15px; cursor: pointer; transform: rotate(-0.6deg); box-shadow: 3px 3px 0 var(--ink); }
-  .tab:nth-child(2) { transform: rotate(0.7deg); }
-  .tab[aria-selected="true"] { background: var(--blood); color: #fff; }
-  .tab:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
-  .card { background: var(--panel); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  th { text-align: left; color: var(--dim); font-weight: normal; padding: 12px 14px; border-bottom: 2px solid var(--line); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
-  td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
-  tr:last-child td { border-bottom: 0; }
-  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
-  td.pos { color: var(--dim); width: 52px; }
-  tr:nth-child(1) td.pos, tr:nth-child(1) td.name { color: var(--amber); }
-  .name { font-weight: bold; word-break: break-word; }
-  .empty { padding: 36px 18px; text-align: center; color: var(--dim); }
-  .foot { margin-top: 18px; color: var(--dim); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); color: var(--text); }
+  body {
+    min-height: 100vh;
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* dos manchas de color muy desenfocadas detrás del vidrio; es lo único que da profundidad */
+  body::before, body::after {
+    content: ""; position: fixed; z-index: -1; border-radius: 50%; filter: blur(110px); pointer-events: none;
+  }
+  body::before { width: 46vmax; height: 46vmax; left: -14vmax; bottom: -18vmax; background: rgba(150, 38, 52, 0.34); }
+  body::after { width: 34vmax; height: 34vmax; right: -10vmax; top: -12vmax; background: rgba(176, 128, 62, 0.2); }
+
+  main { max-width: 760px; margin: 0 auto; padding: 72px 20px 56px; }
+  header { margin-bottom: 36px; }
+  h1 { font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
+  header p { color: var(--dim); margin-top: 4px; }
+
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--edge);
+    border-radius: 18px;
+    -webkit-backdrop-filter: blur(28px) saturate(130%);
+    backdrop-filter: blur(28px) saturate(130%);
+    overflow: hidden;
+  }
+  nav { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid var(--rule); }
+  nav button {
+    appearance: none; border: 0; background: transparent; color: var(--dim);
+    font: inherit; padding: 8px 14px; border-radius: 12px; cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button[aria-selected="true"] { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+  nav button:focus-visible { outline: 1px solid var(--faint); outline-offset: 1px; }
+
   .scroll { overflow-x: auto; }
-  .err { color: var(--blood); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-weight: 400; font-size: 12px; color: var(--faint); padding: 14px 18px 8px; white-space: nowrap; }
+  td { padding: 13px 18px; border-top: 1px solid var(--rule); white-space: nowrap; }
+  th.n, td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  td.pos { color: var(--faint); width: 44px; font-variant-numeric: tabular-nums; }
+  td.dim { color: var(--dim); }
+  tbody tr { transition: background 0.2s; }
+  tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+  .empty { padding: 56px 20px; text-align: center; color: var(--dim); }
+
+  footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 18px; color: var(--faint); font-size: 12px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    main { animation: rise 0.6s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  }
+  @media (max-width: 520px) { main { padding-top: 40px; } td, th { padding-left: 14px; padding-right: 14px; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>HUÉSPED</h1>
-  <p class="sub">El Mapache vigila quién se ha comido la demo y quién no suelta el mando. Se actualiza solo.</p>
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" id="tab-hall" aria-selected="true" aria-controls="panel">Hall de la Fama</button>
-    <button class="tab" role="tab" id="tab-const" aria-selected="false" aria-controls="panel">Los más constantes</button>
+  <header>
+    <h1>huésped</h1>
+    <p>clasificación de la demo</p>
+  </header>
+  <div class="panel">
+    <nav role="tablist">
+      <button role="tab" id="tab-hall" aria-selected="true" aria-controls="view">terminaron la demo</button>
+      <button role="tab" id="tab-const" aria-selected="false" aria-controls="view">más constantes</button>
+    </nav>
+    <div class="scroll" id="view" role="tabpanel"><div class="empty">cargando…</div></div>
   </div>
-  <div class="card scroll" id="panel" role="tabpanel"><div class="empty">Cargando… el Mapache está buscando sus gafas.</div></div>
-  <div class="foot"><span id="upd">&nbsp;</span><span>Activa “Clasificación en línea” en Opciones → Juego para salir aquí.</span></div>
+  <footer><span id="upd">&nbsp;</span><span>se activa al ingresar tu user en el juego</span></footer>
 </main>
 <script>
-const URL_BASE = "https://deyyrcruqjipchofigzz.supabase.co/rest/v1/rpc/";
+const API = "https://deyyrcruqjipchofigzz.supabase.co/rest/v1/rpc/";
 const KEY = "sb_publishable_4NqrXtm2A7d3fP-OLJUCZg_OsCL0Zuh"; // clave pública: solo puede llamar a estas dos lecturas
-const DIFF = { easy: "Fácil", medium: "Medio", hard: "Difícil", absurd: "Absurdo" };
-const HOST = { classic: "Clásico", speedster: "Veloz", juggernaut: "Titán", reaper: "Segador" };
-let current = "hall", cache = {}, failed = false;
+const DIFF = { easy: "fácil", medium: "medio", hard: "difícil", absurd: "absurdo" };
+const HOST = { classic: "clásico", speedster: "veloz", juggernaut: "titán", reaper: "segador" };
+let current = "hall", cache = null, failed = false;
 
-const fmtTime = s => { s = Math.round(s); const m = Math.floor(s / 60), r = s % 60; return m + ":" + String(r).padStart(2, "0"); };
+const fmtTime = s => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 const fmtHours = s => s >= 3600 ? (s / 3600).toFixed(1) + " h" : Math.max(1, Math.round(s / 60)) + " min";
-const fmtDate = d => new Date(d).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+const fmtDate = d => new Date(d).toLocaleDateString("es", { day: "numeric", month: "short" });
 
-function cell(tr, text, cls) { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; }
-function head(cols) { const tr = document.createElement("tr"); cols.forEach(([t, c]) => { const th = document.createElement("th"); th.textContent = t; if (c) th.className = c; tr.appendChild(th); }); const th = document.createElement("thead"); th.appendChild(tr); return th; }
+function row(cells) {
+  const tr = document.createElement("tr");
+  cells.forEach(([text, cls]) => { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); });
+  return tr;
+}
+function table(cols, rows) {
+  const t = document.createElement("table"), h = document.createElement("tr");
+  cols.forEach(([text, cls]) => { const th = document.createElement("th"); th.textContent = text; if (cls) th.className = cls; h.appendChild(th); });
+  const head = document.createElement("thead"), body = document.createElement("tbody");
+  head.appendChild(h); rows.forEach(r => body.appendChild(r)); t.append(head, body);
+  return t;
+}
+function note(text) { const d = document.createElement("div"); d.className = "empty"; d.textContent = text; return d; }
 
 function render() {
-  const panel = document.getElementById("panel");
-  panel.replaceChildren();
+  const view = document.getElementById("view");
+  view.replaceChildren();
+  if (!cache) { view.appendChild(note(failed ? "no pude conectar, reintento en un minuto" : "cargando…")); return; }
   const rows = cache[current];
-  if (!rows) { const d = document.createElement("div"); d.className = "empty" + (failed ? " err" : ""); d.textContent = failed ? "No pude contactar con el servidor. Reintento en un minuto." : "Cargando…"; panel.appendChild(d); return; }
-  if (!rows.length) { const d = document.createElement("div"); d.className = "empty"; d.textContent = current === "hall" ? "Nadie ha terminado la demo todavía. El Mapache se ríe en la oscuridad." : "Nadie ha dado señales de vida todavía."; panel.appendChild(d); return; }
-  const table = document.createElement("table"), body = document.createElement("tbody");
+  if (!rows.length) { view.appendChild(note(current === "hall" ? "todavía nadie ha terminado la demo" : "todavía no hay jugadores")); return; }
   if (current === "hall") {
-    table.appendChild(head([["#", "pos"], ["Jugador"], ["Mejor tiempo", "n"], ["Cuerpo"], ["Dificultad"], ["Primera vez"]]));
-    rows.forEach((r, i) => { const tr = document.createElement("tr"); cell(tr, i + 1, "pos"); cell(tr, r.name, "name"); cell(tr, fmtTime(r.best_time), "n"); cell(tr, HOST[r.host] || r.host || "—"); cell(tr, DIFF[r.difficulty] || r.difficulty || "—"); cell(tr, fmtDate(r.first_finished_at)); body.appendChild(tr); });
+    view.appendChild(table([["", "pos"], ["jugador"], ["mejor tiempo", "n"], ["cuerpo"], ["dificultad"], ["desde"]],
+      rows.map((r, i) => row([[i + 1, "pos"], [r.name], [fmtTime(r.best_time), "n"], [HOST[r.host] || r.host || "—", "dim"], [DIFF[r.difficulty] || r.difficulty || "—", "dim"], [fmtDate(r.first_finished_at), "dim"]]))));
   } else {
-    table.appendChild(head([["#", "pos"], ["Jugador"], ["Tiempo jugado", "n"], ["Runs", "n"], ["Muertes", "n"], ["Mejor sala", "n"]]));
-    rows.forEach((r, i) => { const tr = document.createElement("tr"); cell(tr, i + 1, "pos"); cell(tr, r.name, "name"); cell(tr, fmtHours(r.play_time), "n"); cell(tr, r.runs, "n"); cell(tr, r.deaths, "n"); cell(tr, r.best_room, "n"); body.appendChild(tr); });
+    view.appendChild(table([["", "pos"], ["jugador"], ["tiempo jugado", "n"], ["runs", "n"], ["muertes", "n"], ["mejor sala", "n"]],
+      rows.map((r, i) => row([[i + 1, "pos"], [r.name], [fmtHours(r.play_time), "n"], [r.runs, "n dim"], [r.deaths, "n dim"], [r.best_room, "n dim"]]))));
   }
-  table.appendChild(body); panel.appendChild(table);
 }
 
 async function load() {
   try {
     const [hall, cons] = await Promise.all(["huesped_hall", "huesped_constants"].map(fn =>
-      fetch(URL_BASE + fn, { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: "{}" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })));
+      fetch(API + fn, { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: "{}" })
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })));
     cache = { hall, const: cons }; failed = false;
-    document.getElementById("upd").textContent = "Actualizado " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("upd").textContent = "actualizado " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
   } catch (e) { failed = true; }
   render();
 }
-
 function select(which) {
   current = which;
   document.getElementById("tab-hall").setAttribute("aria-selected", which === "hall");
