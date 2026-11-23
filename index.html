@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUÉSPED · Clasificación</title>
+<meta name="description" content="Quién se ha comido la demo de HUÉSPED y quién no suelta el mando. Se actualiza solo.">
+<style>
+  :root {
+    --bg: #0b0709; --panel: #150d11; --ink: #050204; --bone: #ecdcc0; --dim: #a8967c;
+    --amber: #ffc257; --blood: #c70f1a; --sick: #9a1a5c; --line: #2b1a21;
+  }
+  @media (prefers-color-scheme: light) { :root { --bg: #0b0709; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--bone); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  body { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, #2a0d1d 0%, var(--bg) 60%); }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { margin: 0; font-size: clamp(34px, 8vw, 64px); letter-spacing: 0.06em; color: var(--amber); text-shadow: 3px 3px 0 var(--blood); transform: rotate(-1.2deg); }
+  .sub { margin: 10px 0 26px; color: var(--dim); font-size: 15px; }
+  .tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab { appearance: none; border: 2px solid var(--ink); background: var(--panel); color: var(--bone); padding: 10px 16px; font: inherit; font-size: 15px; cursor: pointer; transform: rotate(-0.6deg); box-shadow: 3px 3px 0 var(--ink); }
+  .tab:nth-child(2) { transform: rotate(0.7deg); }
+  .tab[aria-selected="true"] { background: var(--blood); color: #fff; }
+  .tab:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .card { background: var(--panel); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; color: var(--dim); font-weight: normal; padding: 12px 14px; border-bottom: 2px solid var(--line); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  td.pos { color: var(--dim); width: 52px; }
+  tr:nth-child(1) td.pos, tr:nth-child(1) td.name { color: var(--amber); }
+  .name { font-weight: bold; word-break: break-word; }
+  .empty { padding: 36px 18px; text-align: center; color: var(--dim); }
+  .foot { margin-top: 18px; color: var(--dim); font-size: 13px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .scroll { overflow-x: auto; }
+  .err { color: var(--blood); }
+</style>
+</head>
+<body>
+<main>
+  <h1>HUÉSPED</h1>
+  <p class="sub">El Mapache vigila quién se ha comido la demo y quién no suelta el mando. Se actualiza solo.</p>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-hall" aria-selected="true" aria-controls="panel">Hall de la Fama</button>
+    <button class="tab" role="tab" id="tab-const" aria-selected="false" aria-controls="panel">Los más constantes</button>
+  </div>
+  <div class="card scroll" id="panel" role="tabpanel"><div class="empty">Cargando… el Mapache está buscando sus gafas.</div></div>
+  <div class="foot"><span id="upd">&nbsp;</span><span>Activa “Clasificación en línea” en Opciones → Juego para salir aquí.</span></div>
+</main>
+<script>
+const URL_BASE = "https://deyyrcruqjipchofigzz.supabase.co/rest/v1/rpc/";
+const KEY = "sb_publishable_4NqrXtm2A7d3fP-OLJUCZg_OsCL0Zuh"; // clave pública: solo puede llamar a estas dos lecturas
+const DIFF = { easy: "Fácil", medium: "Medio", hard: "Difícil", absurd: "Absurdo" };
+const HOST = { classic: "Clásico", speedster: "Veloz", juggernaut: "Titán", reaper: "Segador" };
+let current = "hall", cache = {}, failed = false;
+
+const fmtTime = s => { s = Math.round(s); const m = Math.floor(s / 60), r = s % 60; return m + ":" + String(r).padStart(2, "0"); };
+const fmtHours = s => s >= 3600 ? (s / 3600).toFixed(1) + " h" : Math.max(1, Math.round(s / 60)) + " min";
+const fmtDate = d => new Date(d).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+
+function cell(tr, text, cls) { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; }
+function head(cols) { const tr = document.createElement("tr"); cols.forEach(([t, c]) => { const th = document.createElement("th"); th.textContent = t; if (c) th.className = c; tr.appendChild(th); }); const th = document.createElement("thead"); th.appendChild(tr); return th; }
+
+function render() {
+  const panel = document.getElementById("panel");
+  panel.replaceChildren();
+  const rows = cache[current];
+  if (!rows) { const d = document.createElement("div"); d.className = "empty" + (failed ? " err" : ""); d.textContent = failed ? "No pude contactar con el servidor. Reintento en un minuto." : "Cargando…"; panel.appendChild(d); return; }
+  if (!rows.length) { const d = document.createElement("div"); d.className = "empty"; d.textContent = current === "hall" ? "Nadie ha terminado la demo todavía. El Mapache se ríe en la oscuridad." : "Nadie ha dado señales de vida todavía."; panel.appendChild(d); return; }
+  const table = document.createElement("table"), body = document.createElement("tbody");
+  if (current === "hall") {
+    table.appendChild(head([["#", "pos"], ["Jugador"], ["Mejor tiempo", "n"], ["Cuerpo"], ["Dificultad"], ["Primera vez"]]));
+    rows.forEach((r, i) => { const tr = document.createElement("tr"); cell(tr, i + 1, "pos"); cell(tr, r.name, "name"); cell(tr, fmtTime(r.best_time), "n"); cell(tr, HOST[r.host] || r.host || "—"); cell(tr, DIFF[r.difficulty] || r.difficulty || "—"); cell(tr, fmtDate(r.first_finished_at)); body.appendChild(tr); });
+  } else {
+    table.appendChild(head([["#", "pos"], ["Jugador"], ["Tiempo jugado", "n"], ["Runs", "n"], ["Muertes", "n"], ["Mejor sala", "n"]]));
+    rows.forEach((r, i) => { const tr = document.createElement("tr"); cell(tr, i + 1, "pos"); cell(tr, r.name, "name"); cell(tr, fmtHours(r.play_time), "n"); cell(tr, r.runs, "n"); cell(tr, r.deaths, "n"); cell(tr, r.best_room, "n"); body.appendChild(tr); });
+  }
+  table.appendChild(body); panel.appendChild(table);
+}
+
+async function load() {
+  try {
+    const [hall, cons] = await Promise.all(["huesped_hall", "huesped_constants"].map(fn =>
+      fetch(URL_BASE + fn, { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: "{}" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })));
+    cache = { hall, const: cons }; failed = false;
+    document.getElementById("upd").textContent = "Actualizado " + new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) { failed = true; }
+  render();
+}
+
+function select(which) {
+  current = which;
+  document.getElementById("tab-hall").setAttribute("aria-selected", which === "hall");
+  document.getElementById("tab-const").setAttribute("aria-selected", which === "const");
+  render();
+}
+document.getElementById("tab-hall").onclick = () => select("hall");
+document.getElementById("tab-const").onclick = () => select("const");
+load(); setInterval(load, 60000);
+</script>
+</body>
+</html>
